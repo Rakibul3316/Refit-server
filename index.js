@@ -2,6 +2,7 @@ const express = require("express");
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const MongoClient = require('mongodb').MongoClient;
+const ObjectID = require('mongodb').ObjectID;
 require('dotenv').config();
 
 const uri = "mongodb+srv://completeWebsite11:jjitXdzysSFAmOgG@cluster0.dfncg.mongodb.net/refitCompleteWebsite11?retryWrites=true&w=majority";
@@ -25,6 +26,7 @@ client.connect(err => {
     const servicesCollection = client.db("refitCompleteWebsite11").collection("addServices");
     const commentsCollection = client.db("refitCompleteWebsite11").collection("customerComments");
     const ordersCollection = client.db("refitCompleteWebsite11").collection("orders");
+    const adminsCollection = client.db("refitCompleteWebsite11").collection("admins");
 
     // Get the data form addservices(Admin)
     app.post('/addServices', (req, res) => {
@@ -47,17 +49,23 @@ client.connect(err => {
     // Get the data form review(User)
     app.post('/addComments', (req, res) => {
         const customerComment = req.body;
-        console.log(customerComment);
         commentsCollection.insertOne(customerComment)
             .then(result => {
                 res.send(result.insertedCount > 0)
             })
     })
 
+
+    app.get('/customerComment', (req, res) => {
+        commentsCollection.find({})
+            .toArray((err, items) => {
+                res.send(items)
+            })
+    })
+
     // placed orders from the book(User)
     app.post('/addOrders', (req, res) => {
         const order = req.body;
-        console.log(order);
         ordersCollection.insertOne(order)
             .then(result => {
                 res.send(result.insertedCount > 0)
@@ -65,6 +73,7 @@ client.connect(err => {
     })
 
 
+    // loaded specific user order form database
     app.get('/userOrders', (req, res) => {
         ordersCollection.find({ userEmail: req.query.email })
             .toArray((err, items) => {
@@ -73,12 +82,40 @@ client.connect(err => {
     })
 
 
+    // loaded all orders form database
     app.get('/allOrders', (req, res) => {
         ordersCollection.find({})
             .toArray((err, itmes) => {
                 res.send(itmes)
             })
     })
+
+    app.post('/addAdmin', (req, res) => {
+        const admin = req.body;
+        adminsCollection.insertOne(admin)
+            .then(result => {
+                res.send(result.insertedCount > 0)
+            })
+    })
+
+
+    app.post('/isAdmin', (req, res) => {
+        const email = req.body.email;
+        adminsCollection.find({ adminEmail: email })
+            .toArray((err, admins) => {
+                res.send(admins.length > 0)
+            })
+    })
+
+
+    app.post('/deleteService', (req, res) => {
+        const id = req.body.id
+        servicesCollection.deleteOne({ _id: ObjectID(id) })
+            .then(result => {
+                res.send(result.deletedCount > 0)
+            })
+    })
+
 });
 
 app.listen(process.env.PORT || port)
